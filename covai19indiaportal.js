@@ -39,7 +39,7 @@ const convertDistrictDbObjectToResponseObject = dbObject => {
     districtName: dbObject.district_name,
     stateId: dbObject.state_id,
     cases: dbObject.cases,
-    curved: dbObject.cured,
+    cured: dbObject.cured,
     active: dbObject.active,
     deaths: dbObject.deaths,
   }
@@ -54,7 +54,7 @@ const authenticateToken = (request, response, next) => {
   }
   if (jwtToken === undefined) {
     response.status(401)
-    response.send('Invalid Access Token')
+    response.send('Invalid JWT Token')
   } else {
     jwt.verify(jwtToken, 'MY_SECRET_TOKEN', async (error, payload) => {
       if (error) {
@@ -74,7 +74,7 @@ app.post('/login/', async (request, response) => {
   const dbUser = await db.get(selectUserQuery)
   if (dbUser === undefined) {
     response.status(400)
-    response.send('Invalid User')
+    response.send('Invalid user')
   } else {
     const isPasswordMatched = await bcrypt.compare(password, dbUser.password)
     if (isPasswordMatched === true) {
@@ -85,7 +85,7 @@ app.post('/login/', async (request, response) => {
       response.send({jwtToken})
     } else {
       response.status(400)
-      response.send('Invalid Password')
+      response.send('Invalid password')
     }
   }
 })
@@ -97,7 +97,7 @@ app.get('/states/', authenticateToken, async (request, response) => {
   const statesArray = await db.all(getStatesQuery)
   response.send(
     statesArray.map(eachState => {
-      convertStateDbObjectToResponseObject(eachState)
+      return convertStateDbObjectToResponseObject(eachState)
     }),
   )
 })
@@ -126,9 +126,9 @@ app.get(
 
 //API 4
 app.post('/districts/', authenticateToken, async (request, response) => {
-  const {districtName, stateId, cases, cured, active, deaths} = request.body
+  const {stateId, districtName, cases, cured, active, deaths} = request.body
   const postDistrictQuery = `
-  INSERT INTO district(state_id, district_name, cases, curved, active, deaths)
+  INSERT INTO district(state_id, district_name, cases, cured, active, deaths)
   VALUES(${stateId}, ${districtName}, ${cases}, ${cured}, ${active}, ${deaths});`
   await db.run(postDistrictQuery)
   response.send('District Successfully Added')
@@ -155,9 +155,9 @@ app.put(
     const {districtId} = request.params
     const {districtName, stateId, cases, cured, active, deaths} = request.body
     const updateDistrictQuery = `
-  UPDATE district SET district_name = ${districtName},
-  state_id = ${stateId}, cases = ${cases}, curved = ${cured}, active = ${active}, deaths = ${deaths}
-  WHERE district_id = ${districtId};`
+      UPDATE district SET district_name = '${districtName}',
+      state_id = ${stateId}, cases = ${cases}, cured = ${cured}, active = ${active}, deaths = ${deaths}
+      WHERE district_id = ${districtId};`
     await db.run(updateDistrictQuery)
     response.send('District Details Updated')
   },
